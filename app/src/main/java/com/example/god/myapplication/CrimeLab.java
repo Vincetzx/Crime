@@ -37,7 +37,7 @@ public class CrimeLab {
             Log.d(TAG, "saveCrimes saved success");
             return true;
         } catch (Exception e) {
-            Log.e(TAG, "saveCrimes is error", e);
+            Log.e(TAG, "saveCrimes is error holy shit", e);
             return false;
         }
     }
