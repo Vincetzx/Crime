@@ -27,7 +27,7 @@ public class CrimeLab {
             mCrimes = mCrimeJSONSerializer.loadCrimes();
         } catch (Exception e) {
             mCrimes = new ArrayList<>();
-            Log.e(TAG, "CrimeLab loading error", e);
+            Log.e(TAG, "CrimeLab loading error holy shit", e);
         }
     }
 
