@@ -1,177 +1,180 @@
 package com.example.god.myapplication;
 
+import android.app.Activity;
 import android.content.Context;
-import android.graphics.Camera;
-import android.os.Build;
+import android.content.Intent;
+import android.hardware.Camera;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
-import android.util.Size;
 import android.view.LayoutInflater;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ProgressBar;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Logger;
 
 /**
- * Created by god on 2016/1/21.
+ * Created by god on 2016/1/25.
  */
-public class CrimeCameraFragment extends Fragment {
-    private static final String TAG = "CrimeCameraFragment";
-    private android.hardware.Camera mCamera;
+public class CrimeCameraFragment extends Fragment{
+    private Camera mCamera;
     private SurfaceView mSurfaceView;
-    private View mProgressBar;
+    private static final String TAG="CrimeCameraFragment";
+    private View mProgressContainer;
 
-
-    private android.hardware.Camera.ShutterCallback mShutterCallback=new android.hardware.Camera.ShutterCallback() {
-        @Override
-        public void onShutter() {
-            mProgressBar.setVisibility(View.VISIBLE);
-        }
-    };
-
-    private android.hardware.Camera.PictureCallback mJepgCallBack=new android.hardware.Camera.PictureCallback() {
-        @Override
-        public void onPictureTaken(byte[] data, android.hardware.Camera camera) {
-            String fileName= UUID.randomUUID().toString() + ".jpg";
-            boolean success=true;
-            FileOutputStream outputStream=null;
-            try
-            {
-                outputStream=getActivity().openFileOutput(fileName, Context.MODE_PRIVATE);
-                outputStream.write(data);
-            }
-            catch(Exception e)
-            {
-                Log.e(TAG, "onPictureTaken error writing to file "+fileName,e);
-                success=false;
-            }
-            finally {
-                try
-                {
-                    if(outputStream!=null)
-                    {
-                        outputStream.close();
-                    }
-                }
-                catch(Exception e)
-                {
-                    Log.e(TAG, "onPictureTaken error on closing"+fileName,e);
-                }
-            }
-            if(success)
-            {
-                Log.i(TAG, "onPictureTaken saved at"+fileName);
-            }
-            getActivity().finish();
-        }
-    };
-
+    public static final String EXTRA_PHOTO_FILENAME="fuck all !";
     @Nullable
-    @SuppressWarnings("deprecation")
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_crime_camera, container, false);
-        Button takePictureButton = (Button) view.findViewById(R.id.crime_camera_takePictureButton);
-        mProgressBar=view.findViewById(R.id.crime_camera_progressContainer);
-        mProgressBar.setVisibility(View.INVISIBLE);
-        takePictureButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-               if(mCamera!=null)
-               {
-                   mCamera.takePicture(mShutterCallback,null, mJepgCallBack);
-               }
-            }
-        });
-        mSurfaceView = (SurfaceView) view.findViewById(R.id.crime_camera_surfaceView);
-        SurfaceHolder holder = mSurfaceView.getHolder();
-        holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-
-        holder.addCallback(new SurfaceHolder.Callback() {
+        View view=inflater.inflate(R.layout.fragment_crime_camera, container, false);
+        mSurfaceView=(SurfaceView)view.findViewById(R.id.crime_camera_surfaceView);
+        mProgressContainer=view.findViewById(R.id.crime_camera_progressContainer);
+        mProgressContainer.setVisibility(View.INVISIBLE);
+        final SurfaceHolder surfaceHolder=mSurfaceView.getHolder();
+        surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        surfaceHolder.addCallback(new SurfaceHolder.Callback() {
             @Override
             public void surfaceCreated(SurfaceHolder holder) {
-                try {
-                    if (mCamera != null) {
-                        mCamera.setPreviewDisplay(holder);
-                    }
-                } catch (IOException e) {
-                    Log.e(TAG, "surfaceCreated error setting", e);
+
+                try{
+                    if(mCamera!=null)
+                {
+                    mCamera.setPreviewDisplay(surfaceHolder);
+                }
+                }
+                catch (IOException e)
+                {
+                    Log.e(TAG, "surfaceCreated setting up error", e);
                 }
             }
 
             @Override
             public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-
-                if (mCamera == null) {
+                if(mCamera==null)
+                {
                     return;
                 }
-                android.hardware.Camera.Parameters parameters = mCamera.getParameters();
-                android.hardware.Camera.Size size = getBestSupporedSize(parameters.getSupportedPreviewSizes(), width, height);
+                Camera.Parameters parameters=mCamera.getParameters();
+                Camera.Size size=getBestSupportSize(parameters.getSupportedPreviewSizes(),width,height);
                 parameters.setPreviewSize(size.width, size.height);
-                size=getBestSupporedSize(parameters.getSupportedPictureSizes(),width,height);
-                parameters.setPictureSize(size.width,size.height);
                 mCamera.setParameters(parameters);
                 try {
                     mCamera.startPreview();
-                } catch (Exception e) {
-                    Log.e(TAG, "could not start preview", e);
+                }
+                catch (Exception e)
+                {
+                    Log.e(TAG, "surfaceChanged not start preview",e);
                     mCamera.release();
-                    mCamera = null;
+                    mCamera=null;
                 }
             }
 
             @Override
             public void surfaceDestroyed(SurfaceHolder holder) {
 
-                if (mCamera != null) {
-                    mCamera.stopPreview();
-                }
             }
         });
-
+        Button takePickture=(Button)view.findViewById(R.id.crime_camera_takPicture);
+        takePickture.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mCamera.takePicture(mShtterCallback,null,mJpegCallback);
+            }
+        });
         return view;
     }
 
-
-    private android.hardware.Camera.Size getBestSupporedSize(List<android.hardware.Camera.Size> sizes, int widht, int height) {
-        android.hardware.Camera.Size bestSize = sizes.get(0);
-        int largestArea = bestSize.width * bestSize.height;
-        for (android.hardware.Camera.Size size : sizes) {
-            int area = size.width * size.height;
-            if (area > largestArea) {
-                bestSize = size;
-                largestArea = area;
-            }
+    private Camera.ShutterCallback mShtterCallback=new Camera.ShutterCallback() {
+        @Override
+        public void onShutter() {
+            mProgressContainer.setVisibility(View.VISIBLE);
         }
-        return bestSize;
-    }
+    };
+
+    private Camera.PictureCallback mJpegCallback=new Camera.PictureCallback() {
+        @Override
+        public void onPictureTaken(byte[] data, Camera camera) {
+            String fileName=UUID.randomUUID()+".jpg";
+            FileOutputStream out=null;
+            boolean success=true;
+            try
+            {
+                out=getActivity().openFileOutput(fileName, Context.MODE_PRIVATE);
+                out.write(data);
+            }
+            catch(Exception e)
+            {
+                Log.e(TAG, "onPictureTaken error writing"+fileName,e);
+                success=false;
+            }
+            finally {
+                try
+                {
+                    if(out !=null)
+                    {
+                        out.close();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.e(TAG, "onPictureTaken closing fail");
+                }
+            }
+            if(success)
+            {
+                Intent intent=new Intent();
+                intent.putExtra(EXTRA_PHOTO_FILENAME,fileName);
+                getActivity().setResult(Activity.RESULT_OK,intent);
+                Log.i(TAG, "onPictureTaken succeed in "+fileName);
+            }
+            else
+            {
+                getActivity().setResult(Activity.RESULT_CANCELED);
+            }
+            getActivity().finish();
+        }
+
+
+    };
 
 
     @Override
     public void onResume() {
         super.onResume();
-        mCamera = mCamera.open();
+        mCamera=Camera.open();
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        if (mCamera != null) {
+        if(mCamera!=null)
+        {
             mCamera.release();
-            mCamera = null;
-
+            mCamera=null;
         }
+    }
+    private Camera.Size getBestSupportSize(List<Camera.Size> sizes,int width,int height)
+    {
+        Camera.Size bestSize=sizes.get(0);
+        int largestArea=bestSize.width*bestSize.height;
+
+        for (Camera.Size s:
+             sizes) {
+            int area=s.width*s.height;
+            if(area>largestArea)
+            {
+                largestArea=area;
+                bestSize=s;
+            }
+        }
+        return bestSize;
     }
 }

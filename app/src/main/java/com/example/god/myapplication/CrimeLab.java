@@ -61,7 +61,7 @@ public class CrimeLab {
     public Crime getCrime(UUID uuid)
     {
         for (Crime crime : mCrimes) {
-            if (crime.getID()==uuid)//但是这里好像又可以了，我服了
+            if (crime.getID()==uuid)//
                 return crime;
         }
         return null;

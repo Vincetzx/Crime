@@ -23,7 +23,9 @@
                   android:launchMode="singleTask"
             >
         </activity>
-<activity android:name=".CrimeCameraActivity"/>
+<activity android:name=".CrimeCameraActivity"
+    android:screenOrientation="landscape"
+    />
     </application>
 
 </manifest>
